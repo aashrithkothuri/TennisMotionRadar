@@ -70,6 +70,22 @@ class SSD1306:
                 if fb.pixel(xx, yy):
                     self.fill_rect(x + xx*scale, y + yy*scale, scale, scale, color)
 
+    # Additional helper to scale text such that it is as large as possible but still fits in oled
+    def draw_text_max(self, text):
+
+        # Width and height in pixels (each char takes 8x8)
+        w, h = 8*len(text), 8
+
+        # How much scale needed to fit width and height within constraints
+        w_scale = self.width//w
+        h_scale = self.height//h
+
+        # Going with lower value (so that everything fits)
+        scale = min(w_scale,h_scale)
+
+        # Drawing scaled text
+        self.draw_text_scaled(text, 0, 0, scale)
+
     def _init_display(self):
         for c in (
             SET_DISP | 0x00,

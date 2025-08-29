@@ -23,11 +23,15 @@ while True:
 
         # If its valid data, print speed (increments of 52cm/s)
         if len(data) == 10:
-            v = data[5]*256 + data[6] # converting corresponding bytes (big endian) to velocity 
+            # converting corresponding bytes (big endian) to velocity (cm/s)
+            v = data[5]*256 + data[6] 
+
+            # Converting to mph
+            v = (v*100)/(3600 * 1.6)
 
             # Clearing oled then display velocity
             oled.fill(0)
-            oled.draw_text_scaled(str(v), 10, 10, 2)
+            oled.draw_text_max(f"{v:.0f} mph")
             oled.show()
 
     sleep(0.02)
