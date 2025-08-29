@@ -27,7 +27,7 @@ while True:
 
             # Clearing oled then display velocity
             oled.fill(0)
-            oled.text(str(v), 20, 20)
+            oled.draw_text_scaled(str(v), 10, 10, 2)
             oled.show()
 
     sleep(0.02)

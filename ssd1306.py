@@ -51,6 +51,25 @@ class SSD1306:
         self._cmd((SET_COM_OUT_DIR | (0x08 if rotated else 0x00)))
         self._cmd((SET_SEG_REMAP | (0x01 if rotated else 0x00)))
 
+    # Additional helper for drawing scaled text 
+    def draw_text_scaled(self, text, x, y, scale, color=1):
+
+        # Width and height in pixels (each char takes 8x8)
+        w, h = 8*len(text), 8
+
+        # Off screen buffer with text
+        scratch = bytearray((w*h)//8) # Contains just the rigth amount of bytes
+        fb = framebuf.FrameBuffer(scratch, w, h, framebuf.MONO_VLSB)
+        fb.text(text, 0, 0, 1)
+
+        # Looping through each pixel
+        for yy in range(h):
+            for xx in range(w):
+
+                # If pixel is "on", draw a scalexscale rectangle representing one pixel
+                if fb.pixel(xx, yy):
+                    self.fill_rect(x + xx*scale, y + yy*scale, scale, scale, color)
+
     def _init_display(self):
         for c in (
             SET_DISP | 0x00,
