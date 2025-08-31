@@ -1,5 +1,5 @@
 # TennisMotionRadar
-Micropython code for pico 2 W based radar gun 
+Micropython code for pico 2 W based radar gun (need micropico extension for vscode)
 (for training neural net for tennis motion app)
 
 Components used:
