@@ -1,10 +1,10 @@
 # Wifi manager class
 # Add a known_networks.json file in the following format to use connect_known() method:
 # [
-#   {"SSID":"Home","PASS":"homepass","IPCONFIG":(ip,subnetmask,gateway,DNS server)},
+#   {"SSID":"Home","PASS":"homepass"},
 # ]
 
-import network, uos as os, time, ujson as json
+import network, uos as os, time, ujson as json, urequests as requests
 
 class wifiManager:
 
@@ -19,9 +19,9 @@ class wifiManager:
 
 
     # Method to connect to a specific wifi
-    def connect(self, SSID, PW, IPCONFIG):
+    def connect(self, SSID, PW):
 
-
+        self.__wlan.disconnect()
 
         # Retry logic
         for _ in range(wifiManager.MAX_TRIES):
@@ -44,6 +44,16 @@ class wifiManager:
                 else:
                     break
 
+            # give DHCP a little more time without changing constants elsewhere
+            # (light wait loop that only runs if still not connected and no fatal status)
+            if (not self.__wlan.isconnected()) and (self.__wlan.status() >= 0):
+                t0 = time.ticks_ms()
+                while (not self.__wlan.isconnected()) and (time.ticks_diff(time.ticks_ms(), t0) < 12000):
+                    # additional brief wait for IP assignment
+                    time.sleep_ms(250)
+                    if self.__wlan.status() < 0:
+                        break
+
             # Break out of retry logic if connected
             if self.__wlan.isconnected():
                 break  
@@ -58,12 +68,17 @@ class wifiManager:
                 self.__wlan.disconnect()      
 
         # Displaying connected message
-        self.__wlan.ifconfig(IPCONFIG) # hardcoded ipconfig
-        print(f"Connected to: {SSID}, config: {self.__wlan.ifconfig()}")
-        return True
+        if self.__wlan.isconnected():  # guard print with check
+            print(f"Connected to: {SSID}, config: {self.__wlan.ifconfig()}")
+            return True
+        else:  # explicit failure path if we exhausted retries
+            print("unable to connect: timed out")
+            return False
 
     # Method to connect to known networks (defined by known_networks.json)
     def connect_known(self):
+
+        self.__wlan.disconnect()
         
         try:
 
@@ -75,14 +90,17 @@ class wifiManager:
 
                 # Parsing json to list (list of dict)
                 networks = json.load(f)
-                print(networks)
 
                 # trying to connect to each known network (in the order they are listed in)
                 for network in networks:
                     SSID = network["SSID"]
                     PASS = network["PASS"]
-                    IPCONFIG = eval(network["IPCONFIG"]) # Turns it into python tuple
-                    self.connect(SSID=SSID, PW=PASS, IPCONFIG=IPCONFIG)
+                    # return immediately on first success; otherwise keep trying
+                    if self.connect(SSID=SSID, PW=PASS):
+                        return True
+
+                # if we iterated all and none worked, return False
+                return False
 
         except Exception as e:
             print(e)
@@ -92,11 +110,27 @@ class wifiManager:
     def send_POST(self, send_json, url):
         
         if self.__wlan.isconnected():
-            pass
+            
+            try:
+                # capture response, read it, and close to avoid socket leaks
+                r = requests.post(url, json=send_json)
+                try:
+                    _ = r.text  # force read to drain socket
+                finally:
+                    r.close()
+                return True  # signal success
+            except Exception as e:
+                print(e)
+                return False  # signal failure
 
         else:
-            return "unable to send: no connection"
+            return False
         
 if __name__ == "__main__":
     wifi = wifiManager()
-    wifi.connect_known()
+    ok = wifi.connect_known()
+    
+    if not ok:  # bail out if we failed to connect
+        raise SystemExit("No known network connected")
+
+    wifi.send_POST({},"https://httpbin.org/post")
