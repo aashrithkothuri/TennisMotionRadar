@@ -112,8 +112,12 @@ class wifiManager:
         if self.__wlan.isconnected():
             
             try:
-                # capture response, read it, and close to avoid socket leaks
-                r = requests.post(url, json=send_json)
+                # making request
+                r = requests.post(
+                    url,
+                    data=json.dumps(send_json),
+                    headers={"Content-Type": "application/json", "Connection": "close"},
+                )       
                 try:
                     _ = r.text  # force read to drain socket
                 finally:
@@ -129,7 +133,7 @@ class wifiManager:
 if __name__ == "__main__":
     wifi = wifiManager()
     ok = wifi.connect_known()
-    
+
     if not ok:  # bail out if we failed to connect
         raise SystemExit("No known network connected")
 
