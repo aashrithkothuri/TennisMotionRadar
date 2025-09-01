@@ -2,8 +2,6 @@
 # Add a known_networks.json file in the following format to use connect_known() method:
 # [
 #   {"SSID":"Home","PASS":"homepass","IPCONFIG":(ip,subnetmask,gateway,DNS server)},
-#   {"SSID":"Lab","PASS":"labpass"},
-#   {"SSID":"Hotspot","PASS":"12345678"}
 # ]
 
 import network, uos as os, time, ujson as json
