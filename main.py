@@ -13,15 +13,6 @@ i2c = I2C(0, sda=Pin(16), scl=Pin(17), freq=400000)
 # Init oled
 oled = SSD1306_I2C(128, 32, i2c)
 
-#############################
-# wifi related code 
-# (not critical for radar gun function)
-
-# Creating manager and connecting to a network
-manager = wifiManager()
-manager.connect_known()
-#############################
-
 while True: 
     if uart.any():
 
@@ -40,22 +31,10 @@ while True:
             # Converting to mph
             v = (v*100)/(3600 * 1.6)
 
-            if v >= 10: # lower constraint for testing
-
-                # Clearing oled then display velocity
-                oled.fill(0)
-                oled.draw_text_max(f"{v:.0f} mph")
-                oled.show()
-
-                ############################
-                # Data upload related code 
-                # (not critical for radar gun function)
-
-                # Wrapping data in a dict and sending data to api via post
-                send_json = {"speed":v, "time":time.time()}
-                manager.send_POST(send_json,"https://210bd431398fe0.lhr.life")
-
-                ############################
+            # Clearing oled then display velocity
+            oled.fill(0)
+            oled.draw_text_max(f"{v:.0f} mph")
+            oled.show()
 
 
     sleep(0.01)
