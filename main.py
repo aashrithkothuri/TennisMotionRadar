@@ -1,4 +1,4 @@
-from time import sleep
+import time
 from machine import I2C, UART, Pin
 from ssd1306 import SSD1306_I2C
 from wifi import wifiManager
@@ -29,12 +29,11 @@ while True:
             v = data[5]*256 + data[6] 
 
             # Converting to mph
-            v = (v*100)/(3600 * 1.6)
+            v = v * 0.0223694
 
             # Clearing oled then display velocity
             oled.fill(0)
             oled.draw_text_max(f"{v:.0f} mph")
             oled.show()
 
-
-    sleep(0.01)
+    time.sleep(0.01)
