@@ -13,27 +13,36 @@ i2c = I2C(0, sda=Pin(16), scl=Pin(17), freq=400000)
 # Init oled
 oled = SSD1306_I2C(128, 32, i2c)
 
+buffer = bytearray()
 while True: 
     if uart.any():
 
-        # Getting UART data
         data = uart.read()
-
-        # If line is falsy 
         if not data:
             continue
 
-        # If its valid data, print speed (increments of 52cm/s)
-        if len(data) == 10:
-            # converting corresponding bytes (big endian) to velocity (cm/s)
-            v = data[5]*256 + data[6] 
+        speeds = []
+        buffer.extend(data)
+        while len(buffer) >= 10:
+            frame_start = buffer.find(b'\x55\xA2\xC1') # finding header
 
-            # Converting to mph
-            v = v * 0.0223694
+            if frame_start == -1 or frame_start + 10 > len(buffer):
+                break
 
+            frame = buffer[frame_start:frame_start+10]
+            buffer = buffer[frame_start+10:] # Removing invalid bytes before a frame and the frame itself from buffer
+
+            speed = frame[5]*256 + frame[6]
+            speed *= 0.0223694
+            speeds.append(speed)
+
+        if not speeds:
+            continue
+
+        if max(speeds) > 10:
             # Clearing oled then display velocity
             oled.fill(0)
-            oled.draw_text_max(f"{v:.0f} mph")
+            oled.draw_text_max(f"{max(speeds):.0f} mph")
             oled.show()
 
     time.sleep(0.01)
